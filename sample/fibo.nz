@@ -1,0 +1,10 @@
+: swap $ t1 $ t2 t1 t2 ;
+: over $ t1 $ t2 t2 t1 t2 ;
+: fibo swap over + _ .i cr ;
+: cr 10 . ;
+1 1
+fibo
+fibo
+fibo
+fibo
+fibo

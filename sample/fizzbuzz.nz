@@ -1,0 +1,11 @@
+### do $ i $ lim i { $ i i _ lim < ! ( [ )
+### loop 1 + } ]
+: cr '\n' . ;
+31 1 #do
+    i 15 % ! ( "FizzBuzz" .s  [ ) # goto fb
+    i 3 % ! ( "Fizz" .s [ ) # goto fb
+    i 5 % ! ( "Buzz" .s [ ) # goto fb
+    i .i
+    ] ] ] # fb
+    cr
+#loop

@@ -1,0 +1,27 @@
+# 実行コード
+### Exit 0
+### EmptyStack 1
+### InvalidToken 2
+### IndexError 3
+### InvalidEscapeSequence 4
+### InvalidArrayDeclaration 5
+
+### EON 1111
+: _digit $ _args _args 0 = ( 1 [ ) 1 $ _temp _args $ _num {
+    _temp 10 * $ _temp _num 1 - $ _num _num 0 = ( _temp [ )
+    } ] ] ;
+: readline #EON { ? _ '\0' = ( [ ) } ] ` ;
+: atoi 0 $ _index 0 $ _value {
+    _ #EON = ( [ ) 48 - _index _digit * _value + $ _value
+    _index 1 + $ _index } ] _value ;
+
+### do $ i $ lim i { $ i i _ lim < ! ( [ )
+### loop 1 + } ]
+
+: cr 10 . ;
+
+: pow $ _y $ _x _y 0 = ( 1 [ ) 1 $ _temp _y $ _num {
+    _temp _x * $ _temp _num 1 - $ _num _num 0 = ( _temp [ )
+    } ] ] ;
+
+: greet "Hello World\n" .s ;
