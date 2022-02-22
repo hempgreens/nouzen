@@ -193,10 +193,10 @@ def strtoint(token):
     global status_code
     v = 0
     dict_ecs_seq = {
-        "\\":"\\", "\"":"\"",
+        "\\":"\\", "\"":"\"", "\'":"\'",
         "a":"\a", "b":"\b", "f":"\f",
         "n":"\n", "r":"\r", "t":"\t",
-        "v":"\v", "e":'\x1b', "0":"\0"
+        "v":"\v", "e":'\x1b', "0":0
     }
     if("0d" == token[:2]):
         v = int(token[2:], 10)
@@ -267,10 +267,16 @@ def set_array(parsed_data, index):
     elif(array_name in [e[1] for e in name_table]):
         value = pop()
         r = [e[1] for e in name_table].index(array_name)
-        if(0 <= i < len(name_table[r][3])):
-            name_table[r][3][i] = value
+        if(name_table[r][2] == TypeVariable.ARRAY):
+            if(0 <= i < len(name_table[r][3])):
+                name_table[r][3][i] = value
+            else:
+                status_code = 3
         else:
-            status_code = 3
+            a = [0 for _ in range(i)]
+            name_table[r][0] = id(a)
+            name_table[r][2] = TypeVariable.ARRAY
+            name_table[r][3] = a
     return index + 2
     
 
@@ -297,7 +303,13 @@ def set_variable(parsed_data, index):
             [id(v), variable_name, TypeVariable.VARIABLE, v]
         )
     else:
-        set_value_variable(v, name=variable_name)
+        r = [e[1] for e in name_table].index(variable_name)
+        if(name_table[r][2] == TypeVariable.VARIABLE):
+            set_value_variable(v, name=variable_name)
+        else:
+            name_table[r][0] = id(v)
+            name_table[r][2] = TypeVariable.VARIABLE
+            name_table[r][3] = v
     return index + 2
 
 def calc_add(parsed_data, index):
@@ -330,7 +342,11 @@ def calc_div(parsed_data, index):
     status_code = 0
     b = pop()
     a = pop()
-    push(a // b)
+    if(b != 0):
+        push(a // b)
+    else:
+        push(0)
+        status_code = 6
     return index + 1
     
 def calc_mod(parsed_data, index):
@@ -338,7 +354,11 @@ def calc_mod(parsed_data, index):
     status_code = 0
     b = pop()
     a = pop()
-    push(a % b)
+    if(b != 0):
+        push(a % b)
+    else:
+        push(0)
+        status_code = 6
     return index + 1
     
 def calc_and(parsed_data, index):
@@ -466,7 +486,10 @@ def input_char(parsed_data, index):
     global status_code
     status_code = 0
     if(len(input_buffer) == 0):
-        input_buffer = input() + "\0"
+        try:
+            input_buffer = input() + "\0"
+        except KeyboardInterrupt:
+            return index + 1
     c = ord(input_buffer[0])
     input_buffer = input_buffer[1:]
     push(c)
@@ -532,9 +555,15 @@ def start_subroutine(parsed_data, index):
     status_code = 0
     j = index
     subroutine_name = parsed_data[index + 1]
-    name_table.append(
-        [index, subroutine_name, TypeVariable.SUBROUTINE, index + 2]
-    )
+    if(subroutine_name not in [e[1] for e in name_table]):
+        name_table.append(
+            [index, subroutine_name, TypeVariable.SUBROUTINE, index + 2]
+        )
+    else:
+        r = [e[1] for e in name_table].index(subroutine_name)
+        name_table[r][0] = index
+        name_table[r][2] = TypeVariable.SUBROUTINE
+        name_table[r][3] = index + 2
     while(parsed_data[j] != ";"):
         j += 1
     return j + 1
@@ -564,6 +593,7 @@ def show_history(parsed_data, index):
     global status_code
     status_code = 0
     l = pop()
+    l = l if 0 < l else 15
     x = len(history_index.history)
     for i in range(x - l, x):
         h = history_index.get(i)
@@ -576,7 +606,10 @@ def show_history(parsed_data, index):
 def pause_program(parsed_data, index):
     global status_code
     status_code = 0
-    input()
+    try:
+        input()
+    except KeyboardInterrupt:
+        return len(parsed_data)
     return index + 1
 
 def sleep_program(parsed_data, index):
@@ -618,7 +651,12 @@ def proc_string(parsed_data, index):
         name_table[i][2] = TypeVariable.ARRAY
         name_table[i][3] = string_list
         return index + 2
-    elif(next_token not in builtin_cmd_token and not next_token.isdigit()):
+    elif(next_token not in builtin_cmd_token
+        and next_token not in escape_cmd_token
+        and strtoint(next_token) == 0
+        and status_code == 2
+        ):
+        status_code = 0
         name_table.append(
             [addr, next_token, TypeVariable.ARRAY, string_list]
         )
@@ -634,10 +672,10 @@ def parse_with_esc_seq(raw):
     is_ckey = False
     result_list = []
     dict_ecs_seq = {
-        "\\":"\\", "\"":"\"",
+        "\\":"\\", "\"":"\"", "\'":"\'",
         "a":"\a", "b":"\b", "f":"\f",
         "n":"\n", "r":"\r", "t":"\t",
-        "v":"\v", "e":'\x1b', "0":0
+        "v":"\v", "e":'\x1b', "0":"\0"
     }
     for i, e in enumerate(raw):
         c = e
