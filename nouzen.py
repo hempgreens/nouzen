@@ -459,7 +459,7 @@ def randint(parsed_data, index):
     global status_code
     status_code = 0
     a = data_stack.pop()
-    x = random.randint(0, a)
+    x = random.randrange(0, a)
     push(x)
     return index + 1
 
