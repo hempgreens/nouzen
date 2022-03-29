@@ -192,12 +192,6 @@ def pop():
 def strtoint(token):
     global status_code
     v = 0
-    dict_ecs_seq = {
-        "\\":"\\", "\"":"\"", "\'":"\'",
-        "a":"\a", "b":"\b", "f":"\f",
-        "n":"\n", "r":"\r", "t":"\t",
-        "v":"\v", "e":'\x1b', "0":0
-    }
     if("0d" == token[:2]):
         v = int(token[2:], 10)
     elif("0x" == token[:2]):
@@ -671,12 +665,6 @@ def proc_string(parsed_data, index):
 def parse_with_esc_seq(raw):
     is_ckey = False
     result_list = []
-    dict_ecs_seq = {
-        "\\":"\\", "\"":"\"", "\'":"\'",
-        "a":"\a", "b":"\b", "f":"\f",
-        "n":"\n", "r":"\r", "t":"\t",
-        "v":"\v", "e":'\x1b', "0":"\0"
-    }
     for i, e in enumerate(raw):
         c = e
         if(is_ckey):
@@ -766,6 +754,13 @@ status_code = 0
 input_buffer = ""
 
 execute_option = [0, 0, 250000]
+
+dict_ecs_seq = {
+    "\\":"\\", "\"":"\"", "\'":"\'",
+    "a":"\a", "b":"\b", "f":"\f",
+    "n":"\n", "r":"\r", "t":"\t",
+    "v":"\v", "e":'\x1b', "0":"\0"
+}
 
 class History_token_index():
     def __init__(self, length=100):
