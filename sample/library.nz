@@ -5,6 +5,8 @@
 ### IndexError 3
 ### InvalidEscapeSequence 4
 ### InvalidArrayDeclaration 5
+### ZeroDivision 6
+### PrintStringError 7
 
 ### EON 1111
 : _digit $ _args _args 0 = ( 1 [ ) 1 $ _temp _args $ _num {

@@ -451,8 +451,11 @@ def print_string(parsed_data, index):
     addr = pop()
     if(addr in [e[0] for e in name_table]):
         i = [e[0] for e in name_table].index(addr)
-        s = name_table[i][3]
-        sys.stdout.write("".join([chr(c) for c in s]))
+        _, _, _type, s = name_table[i]
+        if(_type == TypeVariable.ARRAY):
+            sys.stdout.write("".join([chr(c) for c in s]))
+        else:
+            status_code = 7
     return index + 1
 
 def randint(parsed_data, index):
