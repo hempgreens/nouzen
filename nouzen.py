@@ -17,7 +17,14 @@ def parse_source_code(file_name):
 
 def read_code(file_name):
     parsed_data = []
-    if(os.path.isfile(file_name)):
+    if(file_name is None):
+        s = ""
+        try:
+            s = input()
+        except KeyboardInterrupt:
+            pass
+        parsed_data = split_line(s)
+    elif(os.path.isfile(file_name)):
         with open(file_name, encoding="utf-8") as f:
             for l in (filter(lambda x:x!=[], [split_line(e.strip()) for e in f.readlines()])):
                 parsed_data += l
@@ -781,16 +788,28 @@ class History_token_index():
     def get(self, i):
         return self.history[i]
 
+def option(option):
+    if(option == "version"):
+        version()
+
+def version():
+    version = 0.7
+    rdate = "20220331"
+    print(f"nouzen {version} {rdate}")
 
 if __name__ == "__main__":
-    file_name = sys.argv[1]
-    parsed_data = parse_source_code(sys.argv[1])
-    jump_table = make_jump_table(parsed_data)
-    execute_code = 0
-    history_index = History_token_index()
-    index = 0
-    while 0 <= index and index != len(parsed_data):
-        history_index.push(index)
-        index = execute(parsed_data, index, execute_code)
+    l = len(sys.argv)
+    file_name =  None if l==1 else sys.argv[1]
+    if(file_name is not None and file_name[:2] == "--"):
+        option(file_name[2:])
+    else:
+        parsed_data = parse_source_code(file_name)
+        jump_table = make_jump_table(parsed_data)
+        execute_code = 0
+        history_index = History_token_index()
+        index = 0
+        while 0 <= index and index != len(parsed_data):
+            history_index.push(index)
+            index = execute(parsed_data, index, execute_code)
         
 
