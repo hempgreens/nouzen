@@ -159,7 +159,9 @@ def execute(parsed_data, index, execute_code):
     token = parsed_data[index]
     if(execute_option[0] != 0):
         print(f"[{index}] {token}")
-    if(execute_option[1] > execute_option[2]):
+    if(execute_option[2] < 0):
+        pass
+    elif(execute_option[1] > execute_option[2]):
         print("limit over execute token")
         return len(parsed_data)
     execute_option[1] += 1
@@ -631,8 +633,10 @@ def set_limit_token(parsed_data, index):
     c = pop()
     if(0 < c):
         execute_option[2] = c
+    elif(c == 0):
+        execute_option[2] = 250000
     else:
-        execute_option[2] = 50000
+        execute_option[2] = -1
     return index + 1
 
 def proc_string(parsed_data, index):
@@ -756,6 +760,9 @@ status_code = 0
 
 input_buffer = ""
 
+# 0: trace_line
+# 1: count_execute
+# 2: number_limit_execute
 execute_option = [0, 0, 250000]
 
 dict_ecs_seq = {
