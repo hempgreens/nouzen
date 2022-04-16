@@ -240,11 +240,10 @@ def do_named_proc(parsed_data, index, token):
     status_code = 0
     r = [e[1] for e in name_table].index(token)
     addr, name, _type, value = name_table[r]
-    #debug(f"{addr=} {name=} {_type} {value=}")
     if(_type == TypeVariable.VARIABLE):
         push(value)
     elif(_type == TypeVariable.ARRAY):
-        push(addr)
+        push(len(value))
     else:
         global return_token_indexes
         return_token_indexes.append(index)
@@ -313,6 +312,18 @@ def set_variable(parsed_data, index):
             name_table[r][0] = id(v)
             name_table[r][2] = TypeVariable.VARIABLE
             name_table[r][3] = v
+    return index + 2
+
+def get_ptr(parsed_data, index):
+    global status_code
+    status_code = 0
+    variable_name = parsed_data[index + 1]
+    if(variable_name in [e[1] for e in name_table]):
+        r = [e[1] for e in name_table].index(variable_name)
+        push(name_table[r][0])
+    else:
+        push(0)
+        status_code = 2
     return index + 2
 
 def calc_add(parsed_data, index):
@@ -646,6 +657,72 @@ def set_limit_token(parsed_data, index):
         execute_option[2] = -1
     return index + 1
 
+def push_referenced_value(parsed_data, index):
+    global status_code
+    r = None
+    p = pop()
+    v = 0
+    try:
+        r = [e[0] for e in name_table].index(p)
+    except ValueError:
+        status_code = 8
+    else:
+        v = name_table[r][3]
+    push(v)
+    return index + 1
+
+def get_referenced_array(parsed_data, index):
+    global status_code
+    r = None
+    p = pop()
+    sub = pop()
+    v = 0
+    try:
+        r = [e[0] for e in name_table].index(p)
+    except ValueError:
+        status_code = 8
+    else:
+        a = name_table[r][3]
+        if(0 <= sub < len(a)):
+            v = a[sub]
+        else:
+            status_code = 3
+    push(v)
+    return index + 1
+
+def set_referenced_array(parsed_data, index):
+    global status_code
+    r = None
+    p = pop()
+    sub = pop()
+    v = pop()
+    try:
+        r = [e[0] for e in name_table].index(p)
+    except ValueError:
+        status_code = 8
+    else:
+        a = name_table[r][3]
+        if(0 <= sub < len(a)):
+            a[sub] = v
+        else:
+            status_code = 3
+    push(v)
+    return index + 1
+
+def call_referenced_routine(parsed_data, index):
+    global status_code
+    r = None
+    p = pop()
+    try:
+        r = [e[0] for e in name_table].index(p)
+    except ValueError:
+        status_code = 8
+    else:
+        global return_token_indexes
+        return_token_indexes.append(index)
+        return name_table[r][3]
+    return index + 1
+
 def proc_string(parsed_data, index):
     global status_code
     status_code = 0
@@ -700,7 +777,9 @@ builtin_cmd_token = {
     "@": set_array,
     "@s": set_array,
     "@g": get_array,
+    "@p": get_ptr,
     "$": set_variable,
+    "$p": get_ptr,
     "+": calc_add,
     "-": calc_sub,
     "*": calc_mul,
@@ -744,7 +823,12 @@ escape_cmd_token = {
     "\\sleep": sleep_program,
     
     "\\tracetoken": set_trace_line,
-    "\\limittoken": set_limit_token, 
+    "\\limittoken": set_limit_token,
+    
+    "\\ref.var": push_referenced_value,
+    "\\ref.get": get_referenced_array,
+    "\\ref.set": set_referenced_array,
+    "\\ref.call": call_referenced_routine,
 }
 
 data_stack = []
