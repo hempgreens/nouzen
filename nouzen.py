@@ -6,7 +6,7 @@ import time
 import copy
 
 def debug(msg):
-    print(f"DEBUG> {msg}")
+    print( "DEBUG> {msg}")
 
 def parse_source_code(file_name):
     parsed_data = read_code(file_name)
@@ -243,7 +243,8 @@ def do_named_proc(parsed_data, index, token):
     if(_type == TypeVariable.VARIABLE):
         push(value)
     elif(_type == TypeVariable.ARRAY):
-        push(len(value))
+        #push(len(value))
+        push(addr)
     else:
         global return_token_indexes
         return_token_indexes.append(index)
@@ -281,6 +282,16 @@ def set_array(parsed_data, index):
             name_table[r][3] = a
     return index + 2
     
+def alloc_array(parsed_data, index):
+    global status_code
+    status_code = 0
+    i = pop()
+    ary = [0 for _ in range(i)]
+    name_table.append(
+        [id(ary), None, TypeVariable.ARRAY, ary]
+    )
+    push(id(ary))
+    return index + 1
 
 def get_array(parsed_data, index):
     global status_code
@@ -314,6 +325,27 @@ def set_variable(parsed_data, index):
             name_table[r][3] = v
     return index + 2
 
+def alloc_variable(parsed_data, index):
+    global status_code
+    status_code = 0
+    v = pop()
+    name_table.append(
+        [id(v), None, TypeVariable.VARIABLE, v]
+    )
+    push(id(v))
+    return index + 1
+
+def delete_variable(parsed_data, index):
+    global status_code
+    status_code = 0
+    variable_name = parsed_data[index + 1]
+    if(variable_name in [e[1] for e in name_table]):
+        r = [e[1] for e in name_table].index(variable_name)
+        name_table.pop(r)
+    else:
+        status_code = 2
+    return index + 2
+
 def get_ptr(parsed_data, index):
     global status_code
     status_code = 0
@@ -321,6 +353,18 @@ def get_ptr(parsed_data, index):
     if(variable_name in [e[1] for e in name_table]):
         r = [e[1] for e in name_table].index(variable_name)
         push(name_table[r][0])
+    else:
+        push(0)
+        status_code = 2
+    return index + 2
+
+def get_array_len(parsed_data, index):
+    global status_code
+    status_code = 0
+    variable_name = parsed_data[index + 1]
+    if(variable_name in [e[1] for e in name_table]):
+        r = [e[1] for e in name_table].index(variable_name)
+        push(len(name_table[r][3]))
     else:
         push(0)
         status_code = 2
@@ -474,6 +518,19 @@ def print_string(parsed_data, index):
         _, _, _type, s = name_table[i]
         if(_type == TypeVariable.ARRAY):
             sys.stdout.write("".join([chr(c) for c in s]))
+        else:
+            status_code = 7
+    return index + 1
+
+def print_array(parsed_data, index):
+    global status_code
+    status_code = 0
+    addr = pop()
+    if(addr in [e[0] for e in name_table]):
+        i = [e[0] for e in name_table].index(addr)
+        _, _, _type, s = name_table[i]
+        if(_type == TypeVariable.ARRAY):
+            sys.stdout.write(str(s))
         else:
             status_code = 7
     return index + 1
@@ -723,6 +780,18 @@ def call_referenced_routine(parsed_data, index):
         return name_table[r][3]
     return index + 1
 
+def delete_referenced_array(parsed_data, index):
+    global status_code
+    r = None
+    p = pop()
+    status_code = 0
+    if(p in [e[0] for e in name_table]):
+        r = [e[0] for e in name_table].index(p)
+        name_table.pop(r)
+    else:
+        status_code = 8
+    return index + 1
+
 def proc_string(parsed_data, index):
     global status_code
     status_code = 0
@@ -774,12 +843,17 @@ class TypeVariable(Enum):
 
 
 builtin_cmd_token = {
+    "$": set_variable,
+    "$p": get_ptr,
+    "$a": alloc_variable,
+    "$d": delete_variable,
     "@": set_array,
     "@s": set_array,
     "@g": get_array,
     "@p": get_ptr,
-    "$": set_variable,
-    "$p": get_ptr,
+    "@l": get_array_len,
+    "@a": alloc_array,
+    "@d": delete_variable,
     "+": calc_add,
     "-": calc_sub,
     "*": calc_mul,
@@ -799,6 +873,7 @@ builtin_cmd_token = {
     ".b": put_bin,
     ".c": put_char,
     ".s": print_string,
+    ".l": print_array,
     "\'\'": randint,
     "\"\"": calc_abs,
     ",": get_code,
@@ -829,6 +904,7 @@ escape_cmd_token = {
     "\\ref.get": get_referenced_array,
     "\\ref.set": set_referenced_array,
     "\\ref.call": call_referenced_routine,
+    "\\ref.del": delete_referenced_array,
 }
 
 data_stack = []
